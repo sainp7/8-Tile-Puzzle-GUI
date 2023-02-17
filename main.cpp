@@ -1,37 +1,34 @@
 #include<iostream>
 #include<vector>
 #include<queue>
-#include<conio.h>
 #include<unordered_map>
-#include<map>
 #include<unordered_set>
 #include"opencv2/highgui.hpp"
 #include<opencv2/imgproc.hpp>
-#include<stdint.h>
 #include<string>
 
 using namespace std;
 using namespace cv;
 
 #define N 3
-#define TILESIZE 200
-#define PLAYSPEED 20 //in ms
-#define SIMULATIONSPEED 4
+#define TILE_SIZE 200
+#define PLAY_SPEED 20 //in ms
+#define SIMULATION_SPEED 4
 
 Mat DisplayText(vector<string> lists){
-    Mat Display(Size(3*TILESIZE,3*TILESIZE),CV_8UC3,Scalar(250,250,250));
-    int pad=TILESIZE/5;
-    double fontScale=TILESIZE/150.0;
-    Size TextSize= getTextSize(lists[0],FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),NULL);
-    int x1,y1= (3*TILESIZE - lists.size()*(TextSize.height+pad))/2 ;
+    Mat Display(Size(3 * TILE_SIZE, 3 * TILE_SIZE), CV_8UC3, Scalar(250, 250, 250));
+    int pad= TILE_SIZE / 5;
+    double fontScale= TILE_SIZE / 150.0;
+    Size TextSize= getTextSize(lists[0],FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),nullptr);
+    int x1,y1= (3 * TILE_SIZE - lists.size() * (TextSize.height + pad)) / 2 ;
     y1-=pad/2;
-    for(int i=0;i<lists.size();i++){
-        TextSize= getTextSize(lists[i],FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),NULL);
+    for(const auto & list : lists){
+        TextSize= getTextSize(list,FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),nullptr);
         y1+=(TextSize.height+pad);
-        x1=(3*TILESIZE-TextSize.width)/2;
+        x1= (3 * TILE_SIZE - TextSize.width) / 2;
         putText(
             Display,
-            lists[i],
+            list,
             Point(x1,y1),
             FONT_HERSHEY_DUPLEX,
             fontScale,
@@ -64,18 +61,18 @@ pair<int,int> findTile(vector<vector<int> >& mat ){
 struct Board{
     vector<vector<int> > mat;
 	pair<int,int> pos;//x and y
-    Board(vector<vector<int> >& board){
-        mat=board;
-        pos=findTile(mat);
+    explicit Board(vector<vector<int> >& board){
+        mat = board;
+        pos = findTile(mat);
     }
-    Board (Board* board){
-        mat=board->mat;
-        pos=board->pos;
+    explicit Board (Board* board){
+        mat = board->mat;
+        pos = board->pos;
     }
 };
 
 void drawLine( Mat img, Point start, Point end ){
-    int thickness = (int)TILESIZE/75.0;
+    int thickness = (int) TILE_SIZE / 75.0;
     int lineType = LINE_8;
     line( img,
        start,
@@ -88,7 +85,7 @@ void drawLine( Mat img, Point start, Point end ){
 void drawTile( Mat img, Point start, Point end, int a){
     int thickness = 2;
     int lineType = LINE_8;
-    double fontScale = TILESIZE/50.0;
+    double fontScale = TILE_SIZE / 50.0;
     Scalar color = (a!=0? Scalar(250,250,250): Scalar(200,200,200) );
     rectangle(img,
         start,
@@ -97,7 +94,7 @@ void drawTile( Mat img, Point start, Point end, int a){
         FILLED,
         LINE_8 );
     if(a!=0&&a!=-1){
-        Size textSize = getTextSize(to_string(a),FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),NULL);
+        Size textSize = getTextSize(to_string(a),FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),nullptr);
         int textX = ((int)end.x - (int)textSize.width+start.x)/2;
         int textY = ((int)end.y + (int)textSize.height+start.y)/2;
         putText(img,
@@ -111,22 +108,22 @@ void drawTile( Mat img, Point start, Point end, int a){
     }
 }
 
-void putLine(Mat img){
-    drawLine(img,Point(TILESIZE,0),Point(TILESIZE,3*TILESIZE));
-    drawLine(img,Point(2*TILESIZE,0),Point(2*TILESIZE,3*TILESIZE));
-    drawLine(img,Point(0,TILESIZE),Point(3*TILESIZE,TILESIZE));
-    drawLine(img,Point(0,2*TILESIZE),Point(3*TILESIZE,2*TILESIZE));
+void putLine(const Mat& img){
+    drawLine(img, Point(TILE_SIZE, 0), Point(TILE_SIZE, 3 * TILE_SIZE));
+    drawLine(img, Point(2 * TILE_SIZE, 0), Point(2 * TILE_SIZE, 3 * TILE_SIZE));
+    drawLine(img, Point(0, TILE_SIZE), Point(3 * TILE_SIZE, TILE_SIZE));
+    drawLine(img, Point(0, 2 * TILE_SIZE), Point(3 * TILE_SIZE, 2 * TILE_SIZE));
 
 }
 
 Mat createBoard(vector<vector<int> >& mat){
-    Mat Board(Size(N*TILESIZE,N*TILESIZE),CV_8UC3,Scalar(255,255,255));
+    Mat Board(Size(N * TILE_SIZE, N * TILE_SIZE), CV_8UC3, Scalar(255, 255, 255));
     for(int i=0;i<mat.size();i++){
         for(int j=0;j<mat[0].size();j++){
-            int x1=j*TILESIZE;
-            int y1=i*TILESIZE;
-            int x2=x1+TILESIZE;
-            int y2=y1+TILESIZE;
+            int x1= j * TILE_SIZE;
+            int y1= i * TILE_SIZE;
+            int x2= x1 + TILE_SIZE;
+            int y2= y1 + TILE_SIZE;
             drawTile(Board,Point(x1,y1),Point(x2,y2),mat[i][j]);
         }
     }
@@ -141,28 +138,28 @@ void drawBoard(vector<vector<int> >& mat){
 
 void animateBoard(Board* prev,Board* curr,int speed){
     drawBoard(prev->mat);
-    Mat Board(Size(N*TILESIZE,N*TILESIZE),CV_8UC3,Scalar(255,255,255));
+    Mat Board(Size(N * TILE_SIZE, N * TILE_SIZE), CV_8UC3, Scalar(255, 255, 255));
     for(int i=0;i<prev->mat.size();i++){
         for(int j=0;j<prev->mat[0].size();j++){
-            int x1=i*TILESIZE;
-            int y1=j*TILESIZE;
-            int x2=x1+TILESIZE;
-            int y2=y1+TILESIZE;
+            int x1= i * TILE_SIZE;
+            int y1= j * TILE_SIZE;
+            int x2= x1 + TILE_SIZE;
+            int y2= y1 + TILE_SIZE;
             if(i==curr->pos.second &&j==curr->pos.first)
                     drawTile(Board,Point(x1,y1),Point(x2,y2),curr->mat[j][i]);
             else
             drawTile(Board,Point(x1,y1),Point(x2,y2),prev->mat[j][i]);
         }
     }
-    int dely=(prev->pos.first-curr->pos.first);
-    int delx=(prev->pos.second-curr->pos.second);
-    int currx1=curr->pos.second *TILESIZE;
-    int curry1=curr->pos.first *TILESIZE;
-    int currx2=currx1+TILESIZE;
-    int curry2=curry1+TILESIZE;
-    for(int i=0;i<TILESIZE;i=i+1*speed){
+    int del_y=(prev->pos.first - curr->pos.first);
+    int del_x=(prev->pos.second - curr->pos.second);
+    int curr_x1= curr->pos.second * TILE_SIZE;
+    int curr_y1= curr->pos.first * TILE_SIZE;
+    int curr_x2= curr_x1 + TILE_SIZE;
+    int curr_y2= curr_y1 + TILE_SIZE;
+    for(int i=0; i < TILE_SIZE; i= i + 1 * speed){
         Mat Transition=Board.clone();
-        drawTile(Transition,Point(currx1+delx*i,curry1+dely*i),Point(currx2+delx*i,curry2+dely*i),prev->mat[curr->pos.first][curr->pos.second]);
+        drawTile(Transition, Point(curr_x1 + del_x * i, curr_y1 + del_y * i), Point(curr_x2 + del_x * i, curr_y2 + del_y * i), prev->mat[curr->pos.first][curr->pos.second]);
         putLine(Transition);
         imshow("Board",Transition);
         waitKey(1);
@@ -170,18 +167,18 @@ void animateBoard(Board* prev,Board* curr,int speed){
     drawBoard(curr->mat);
 }
 
-Board* getBoard(string info,string gameType){
+Board* getBoard(const string& info,const string& gameType){
     vector<string> Instructions{
         "",
         "Instructions:",
         "Fill tiles 1-8",
         "Use \'0\' for blank",
     };
-    if(info.size()!=0)
+    if(!info.empty())
         Instructions.insert(Instructions.begin(),"Input \'"+info+"\' Board");
-    if(info.size()!=0)
+    if(!info.empty())
         Instructions.insert(Instructions.begin(),"Mode: "+gameType);
-    Instructions.push_back("Press key to continue!");
+    Instructions.emplace_back("Press key to continue!");
     imshow("Board",DisplayText(Instructions));
     waitKey();
     vector<vector<int> > mat(N,vector<int>(N,-1));
@@ -189,7 +186,7 @@ Board* getBoard(string info,string gameType){
     unordered_set<int> st;
     while(itr<N*N){
         drawBoard(mat);
-        if(st.size()==0){
+        if(st.empty()){
             Mat toast=DisplayText({"Enter",info});
             putLine(toast);
             imshow("Board",toast);
@@ -233,12 +230,12 @@ struct TileNode{
 	int moveTaken=-1;
 	unordered_map<int,pair<int,int>> moves;//moves and their cost,level
 
-	TileNode(Board* Prev, pair<int,int> newPos, int levell, vector<vector<int> >& Final){
-        parent= NULL;
+	TileNode(Board* Prev, pair<int,int> newPos, int level, vector<vector<int> >& Final){
+        parent= nullptr;
         B= new Board(Prev);
         swap(B->mat[B->pos.first][B->pos.second], B->mat[newPos.first][newPos.second]);
         cost = calculateCost(B->mat,Final);
-        level = levell;
+        level = level;
         B->pos=newPos;
         moveTaken=-1;
     }
@@ -250,31 +247,30 @@ struct TileNode{
 void putWeights(Mat Board,TileNode* curr){
     int i=curr->B->pos.first;
     int j=curr->B->pos.second;
-    int xo1=j*TILESIZE;
-    int yo1=i*TILESIZE;
-    int xo2=xo1+TILESIZE;
-    int yo2=yo1+TILESIZE;
+    int xo1= j * TILE_SIZE;
+    int yo1= i * TILE_SIZE;
+    int xo2= xo1 + TILE_SIZE;
+    int yo2= yo1 + TILE_SIZE;
     for(auto muv:curr->moves){
         int i=curr->B->pos.first+row[muv.first];
         int j=curr->B->pos.second+col[muv.first];
-        int x1=j*TILESIZE;
-        int y1=i*TILESIZE;
-        int x2=x1+TILESIZE;
-        int y2=y1+TILESIZE;
-        //PUT weigths
-        double fontScale= TILESIZE/250.0;
+        int x1= j * TILE_SIZE;
+        int y1= i * TILE_SIZE;
+        int x2= x1 + TILE_SIZE;
+        int y2= y1 + TILE_SIZE;
+        double fontScale= TILE_SIZE / 250.0;
         int lineType = LINE_8;
         string text =""+ to_string(muv.second.first)+ "-"+to_string(muv.second.second)+"";
-        int xmin= min(xo1,x1);
-        int ymin= min(yo1,y1);
-        int xmax= max(xo2,x2);
-        int ymax= max(yo2,y2);
-        Size textSize = getTextSize(text,FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),NULL);
-        int textX = ((int)xmax - (int)textSize.width+xmin)/2;
-        int textY = ((int)ymax + (int)textSize.height+ymin)/2;
+        int x_min= min(xo1, x1);
+        int y_min= min(yo1, y1);
+        int x_max= max(xo2, x2);
+        int y_max= max(yo2, y2);
+        Size textSize = getTextSize(text,FONT_HERSHEY_DUPLEX,fontScale,(int)ceil(fontScale),nullptr);
+        int textX = ((int)x_max - (int)textSize.width + x_min) / 2;
+        int textY = ((int)y_max + (int)textSize.height + y_min) / 2;
         x2=textX+textSize.width;
         y2=textY-textSize.height;
-        int pad=(int)ceil(TILESIZE/30);
+        int pad=(int)ceil(TILE_SIZE / 30);
         rectangle(Board,
             Point(textX-pad,y2-pad),
             Point(x2+pad,textY+pad),
@@ -299,11 +295,11 @@ void showMoves(TileNode* curr,int moveTaken){
     for(auto muv:curr->moves){
         int i=curr->B->pos.first+row[muv.first];
         int j=curr->B->pos.second+col[muv.first];
-        int x1=j*TILESIZE;
-        int y1=i*TILESIZE;
-        int x2=x1+TILESIZE;
-        int y2=y1+TILESIZE;
-        //RECANGLE
+        int x1= j * TILE_SIZE;
+        int y1= i * TILE_SIZE;
+        int x2= x1 + TILE_SIZE;
+        int y2= y1 + TILE_SIZE;
+        //RECTANGLE
         int thickness = 2;
         int lineType = LINE_8;
         Scalar color = (muv.first==moveTaken ? Scalar(150,250,150): Scalar(150,150,250) );
@@ -314,18 +310,18 @@ void showMoves(TileNode* curr,int moveTaken){
             FILLED,
             LINE_8 );
         //TILE NUMBER
-        double fonscale = TILESIZE/50.0;
-        Size textSize = getTextSize(to_string(curr->B->mat[i][j]),FONT_HERSHEY_DUPLEX,fonscale,(int)fonscale,NULL);
+        double fontScale = TILE_SIZE / 50.0;
+        Size textSize = getTextSize(to_string(curr->B->mat[i][j]), FONT_HERSHEY_DUPLEX, fontScale, (int)fontScale, NULL);
         int textX = ((int)x2 - (int)textSize.width+x1)/2;
         int textY = ((int)y2 + (int)textSize.height+y1)/2;
         putText(Board,
-            to_string(curr->B->mat[i][j]),
-            Point(textX,textY),
-            FONT_HERSHEY_DUPLEX,
-            fonscale,
-            Scalar(0,0,0),
-            (int)fonscale,
-            lineType);
+                to_string(curr->B->mat[i][j]),
+                Point(textX,textY),
+                FONT_HERSHEY_DUPLEX,
+                fontScale,
+                Scalar(0,0,0),
+                (int)fontScale,
+                lineType);
     }
     putLine(Board);
     putWeights(Board,curr);
@@ -342,13 +338,13 @@ struct comp {
 
 void simulatePath(TileNode* root){
     vector<TileNode*> path;
-    while(root!=NULL){
+    while(root!=nullptr){
         path.push_back(root);
         root=root->parent;
     }
-    for(int i=path.size()-1;i>0;i--){
+    for(int i= path.size() -1;i>0;i--){
         showMoves(path[i],path[i-1]->moveTaken);
-        animateBoard(path[i]->B,path[i-1]->B,SIMULATIONSPEED);
+        animateBoard(path[i]->B, path[i-1]->B, SIMULATION_SPEED);
         waitKey(100);
     }
     drawBoard(path[0]->B->mat);
@@ -359,7 +355,7 @@ void simulatePath(TileNode* root){
 
 void solve(Board* C, Board* F){
 	priority_queue<TileNode*, std::vector<TileNode*>, comp> pq;
-	TileNode* root = new TileNode(C, C->pos, 0,F->mat);
+	auto* root = new TileNode(C, C->pos, 0,F->mat);
 	pq.push(root);
 	while (!pq.empty()) {
 		TileNode* min = pq.top();
@@ -370,7 +366,7 @@ void solve(Board* C, Board* F){
 		}
 		for (int i=0; i<4; i++){
 			if (isSafe(min->B->pos.first + row[i], min->B->pos.second + col[i])){
-				TileNode* child = new TileNode(min->B, make_pair(min->B->pos.first + row[i],min->B->pos.second + col[i]), min->level + 1,F->mat);
+				auto* child = new TileNode(min->B, make_pair(min->B->pos.first + row[i],min->B->pos.second + col[i]), min->level + 1,F->mat);
 				child->parent=min;
 				child->moveTaken=i;
 				pq.push(child);
@@ -394,7 +390,7 @@ void SolvePuzzle(){
 
 }
 
-bool isfinished(Board* C, Board* F){
+bool isFinished(Board* C, Board* F){
     for(int i=0;i<C->mat.size();i++)
         for(int j=0;j<C->mat[i].size();j++)
             if(C->mat[i][j]!=F->mat[i][j])
@@ -410,7 +406,7 @@ unordered_map<char,int > moves {
 };
 
 void moveTile(Board *C,Board *F, char ch){
-    unordered_map<char,int > ::iterator move = moves.find(ch);
+    auto move = moves.find(ch);
     if(move==moves.end())
         return;
     if(isSafe(C->pos.first + row[move->second],C->pos.second + col[move->second])){
@@ -421,12 +417,12 @@ void moveTile(Board *C,Board *F, char ch){
 }
 
 void play(Board* game,Board* goal){
-    while(!isfinished(game,goal)){
+    while(!isFinished(game, goal)){
         drawBoard(game->mat);
         char choice=waitKey();
-        Board* prev= new Board(game);
+        auto* prev= new Board(game);
         moveTile(game, goal, choice);
-        animateBoard(prev,game,PLAYSPEED);
+        animateBoard(prev, game, PLAY_SPEED);
         if(choice=='3')
             break;
     }
@@ -455,11 +451,10 @@ int main() {
         "Press \'3\' to Exit"
     };
     char choice;
-    bool flag=1;
+    bool flag=true;
     while(flag){
         imshow("Board",DisplayText(options));
         choice = waitKey();
-        //cout<<(int)choice;
         switch (choice)
         {
         case '1':
@@ -469,7 +464,7 @@ int main() {
             SolvePuzzle();
             break;
         case '3':
-            flag=0;
+            flag=false;
             break;
         default:
             cout<<"Enter valid input"<<endl;
